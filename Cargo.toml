@@ -4,10 +4,11 @@ version = "1.0.0"
 edition = "2021"
 
 description = "A todo management library for Rust"
-
+authors = ["Kyllingene"]
 license = "MIT"
 
-# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+repository = "https://github.com/Kyllingene/todo-lib"
+homepage = "https://github.com/Kyllingene/todo-lib"
 
 [dependencies]
 datetime = "0.5.2"
