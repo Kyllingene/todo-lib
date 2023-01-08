@@ -17,6 +17,7 @@ pub enum TodoDate {
 }
 
 impl IsDue for TodoDate {
+    /// Returns true if it is currently on or past the due date
     fn due(&self) -> bool {
         match self {
             Self::Never => false,
@@ -59,6 +60,7 @@ impl Display for TodoDate {
 }
 
 impl TodoDate {
+    /// Convenience method for `!= TodoDate::Never`
     pub fn is_some(&self) -> bool {
         match self {
             Self::Never => false,
@@ -66,6 +68,7 @@ impl TodoDate {
         }
     }
 
+    /// Convenience method for `== TodoDate::Never`
     pub fn is_none(&self) -> bool {
         !self.is_some()
     }
@@ -83,6 +86,8 @@ pub struct Todo {
 }
 
 impl IsDue for Todo {
+    /// Returns true if it is currently on or past the due date,
+    /// unless the todo is already complete 
     fn due(&self) -> bool {
         !self.completed && self.deadline.due()
     }
@@ -97,6 +102,7 @@ impl Display for Todo {
 }
 
 impl Todo {
+    /// Returns a new Todo
     pub fn new(title: String, deadline: TodoDate, description: Option<String>) -> Self {
         Todo {
             deadline,
@@ -109,6 +115,7 @@ impl Todo {
         }
     }
 
+    /// Marks the todo as complete
     pub fn complete(&mut self) {
         self.completed = true;
     }
@@ -121,6 +128,7 @@ pub struct TodoColumn {
 }
 
 impl TodoColumn {
+    /// Returns an empty TodoColumn
     pub fn new(title: String) -> Self {
         TodoColumn {
             todos: Vec::new(),
@@ -128,10 +136,12 @@ impl TodoColumn {
         }
     }
 
+    /// Adds a todo to the column
     pub fn add(&mut self, todo: Todo) {
         self.todos.push(todo);
     }
 
+    /// Searches for the todo by title. If found, returns it, and removes it from the column
     pub fn pop(&mut self, title: String) -> Option<Todo> {
         for (i, todo) in self.todos.iter().enumerate() {
             if todo.title == title {
@@ -142,6 +152,7 @@ impl TodoColumn {
         None
     }
 
+    /// Searches for the todo by title. If found, returns a mutable reference to it
     pub fn get(&mut self, title: String) -> Option<&mut Todo> {
         for todo in self.todos.iter_mut() {
             if todo.title == title {
@@ -154,6 +165,7 @@ impl TodoColumn {
 }
 
 impl IsDue for TodoColumn {
+    /// Returns true if any the of the contained todos are due
     fn due(&self) -> bool {
         self.todos.iter().any(|t| t.due())
     }
@@ -177,6 +189,7 @@ pub struct TodoTable {
 }
 
 impl IsDue for TodoTable {
+    /// Returns true if any the of the contained columns contain a todo which is due
     fn due(&self) -> bool {
         self.columns.iter().any(|tt| tt.due())
     }
@@ -194,6 +207,7 @@ impl Display for TodoTable {
 }
 
 impl TodoTable {
+    /// Returns an empty TodoTable
     pub fn new(title: Option<String>) -> Self {
         TodoTable {
             title: title.unwrap_or("Todos".into()),
@@ -201,10 +215,13 @@ impl TodoTable {
         }
     }
 
+    /// Adds a column to the table
     pub fn add_col(&mut self, title: String) {
         self.columns.push(TodoColumn::new(title));
     }
 
+    /// Searches for the todo by title in a column.
+    /// If found, returns a mutable reference to it
     pub fn get_todo(&mut self, title: String, col_title: String) -> Option<&mut Todo> {
         for col in self.columns.iter_mut() {
             if col.title == col_title {
@@ -217,6 +234,7 @@ impl TodoTable {
         None
     }
 
+    /// Adds a todo to a column
     pub fn add_todo(&mut self, todo: Todo, col_title: String) {
         for col in self.columns.iter_mut() {
             if col.title == col_title {
@@ -226,6 +244,8 @@ impl TodoTable {
         }
     }
 
+    /// Moves a todo from one column to another.
+    /// If either column or the todo doesn't exist, returns false
     pub fn move_todo(&mut self, title: String, from: String, to: String) -> bool {
         let mut todo = None;
         let mut to_col = None;
@@ -247,8 +267,9 @@ impl TodoTable {
         true
     }
 
-    pub fn col(&self, title: String) -> Option<&TodoColumn> {
-        for col in self.columns.iter() {
+    /// Searches for a column by name. If found, returns a mutable reference
+    pub fn col(&mut self, title: String) -> Option<&mut TodoColumn> {
+        for col in self.columns.iter_mut() {
             if col.title == title {
                 return Some(col);
             }
@@ -265,7 +286,8 @@ mod tests {
     use crate::*;
 
     #[test]
-    fn create_add_check_move() {
+    /// Tests creation, addition, completion, and moving of todos and tabless
+    fn create_add_complete_move() {
         let mut todos = TodoTable::new(None);
         todos.add_col("A".into());
         todos.add_col("B".into());
@@ -287,6 +309,7 @@ mod tests {
     }
 
     #[test]
+    /// Tests due dates
     fn is_due() {
         let mut todo = Todo::new("".into(), TodoDate::Instant(LocalDateTime::from_instant(Instant::at_epoch())), None);
         assert!(todo.due(), "Should be due, isn't; due: {}", todo.deadline);
