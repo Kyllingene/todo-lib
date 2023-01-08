@@ -25,10 +25,10 @@ impl IsDue for TodoDate {
                 let now = LocalDateTime::now();
                 let lt_now = LocalTime::hms_ms(now.hour(), now.minute(), 0, 0).unwrap();
 
-                *t >= lt_now
+                *t <= lt_now
             }
-            Self::Day(t) => *t >= LocalDate::today(),
-            Self::Instant(t) => *t >= LocalDateTime::now(),
+            Self::Day(t) => *t <= LocalDate::today(),
+            Self::Instant(t) => *t <= LocalDateTime::now(),
         }
     }
 }
@@ -87,7 +87,7 @@ pub struct Todo {
 
 impl IsDue for Todo {
     /// Returns true if it is currently on or past the due date,
-    /// unless the todo is already complete 
+    /// unless the todo is already complete
     fn due(&self) -> bool {
         !self.completed && self.deadline.due()
     }
@@ -249,7 +249,7 @@ impl TodoTable {
     pub fn move_todo(&mut self, title: String, from: String, to: String) -> bool {
         let mut todo = None;
         let mut to_col = None;
-        let iter = self.columns.iter_mut(); 
+        let iter = self.columns.iter_mut();
         for col in iter {
             if col.title == from {
                 todo = col.get(title);
@@ -281,8 +281,6 @@ impl TodoTable {
 
 #[cfg(test)]
 mod tests {
-    use datetime::Instant;
-
     use crate::*;
 
     #[test]
@@ -311,10 +309,50 @@ mod tests {
     #[test]
     /// Tests due dates
     fn is_due() {
-        let mut todo = Todo::new("".into(), TodoDate::Instant(LocalDateTime::from_instant(Instant::at_epoch())), None);
-        assert!(todo.due(), "Should be due, isn't; due: {}", todo.deadline);
+        let mut todo = Todo::new("".into(), TodoDate::Instant(LocalDateTime::at(0)), None);
+        assert!(
+            todo.due(),
+            "Should be due, isn't; deadline{}",
+            todo.deadline
+        );
 
         todo.complete();
-        assert!(!todo.due(), "Shouldn't be due, is; due: {}", todo.deadline);
+        assert!(
+            !todo.due(),
+            "Shouldn't be due, is; deadline{}",
+            todo.deadline
+        );
+
+        let todo = Todo::new("".into(), TodoDate::Day(LocalDate::today()), None);
+        assert!(
+            todo.due(),
+            "Should be due, isn't; deadline{}",
+            todo.deadline
+        );
+
+        let todo = Todo::new("".into(), TodoDate::Daily(LocalTime::midnight()), None);
+        assert!(
+            todo.due(),
+            "Should be due, isn't; deadline{}",
+            todo.deadline
+        );
+
+        let todo = Todo::new(
+            "".into(),
+            TodoDate::Daily(LocalTime::hms(23, 59, 59).expect("Failed to create LocalTime")),
+            None,
+        );
+        assert!(
+            !todo.due(),
+            "Shouldn't be due, is; deadline{}",
+            todo.deadline
+        );
+
+        let todo = Todo::new("".into(), TodoDate::Never, None);
+        assert!(
+            !todo.due(),
+            "Shouldn't be due, is; deadline{}",
+            todo.deadline
+        );
     }
 }
