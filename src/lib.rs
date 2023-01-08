@@ -348,7 +348,7 @@ mod tests {
             todo.deadline
         );
 
-        let todo = Todo::new("".into(), TodoDate::Never, None);
+        let todo = Todo::default();
         assert!(
             !todo.due(),
             "Shouldn't be due, is; deadline{}",
