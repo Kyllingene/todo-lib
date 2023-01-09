@@ -1,6 +1,6 @@
 # todo
 
-Relatively simple todo management.
+Relatively simple todo management. Supports parsing to/from [todo.txt](http://todotxt.org).
 
 Example:
 ```rust
