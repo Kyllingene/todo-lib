@@ -102,10 +102,7 @@ impl Display for TodoPriority {
 impl TodoPriority {
     /// Convenience method for `!= TodoPriority::None`.
     pub fn is_some(&self) -> bool {
-        match self {
-            Self::None => false,
-            _ => true,
-        }
+        !matches!(self, Self::None)
     }
 
     /// Convenience method for `== TodoPriority::None`.
@@ -188,10 +185,7 @@ impl Display for TodoDate {
 impl TodoDate {
     /// Convenience method for `!= TodoDate::Never`.
     pub fn is_some(&self) -> bool {
-        match self {
-            Self::Never => false,
-            _ => true,
-        }
+        !matches!(self, Self::Never)
     }
 
     /// Convenience method for `== TodoDate::Never`.
@@ -224,8 +218,8 @@ pub enum TodoTag {
 impl Display for TodoTag {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
-            Self::Project(t) => write!(f, "+{}", t),
-            Self::Context(t) => write!(f, "@{}", t),
+            Self::Project(t) => write!(f, "+{t}"),
+            Self::Context(t) => write!(f, "@{t}"),
         }
     }
 }
@@ -507,13 +501,7 @@ impl TodoColumn {
 
     /// Searches for the todo by title. If found, returns a mutable reference to it.
     pub fn get<S: ToString>(&mut self, title: S) -> Option<&mut Todo> {
-        for todo in self.todos.iter_mut() {
-            if todo.title == title.to_string() {
-                return Some(todo);
-            }
-        }
-
-        None
+        self.todos.iter_mut().find(|todo| todo.title == title.to_string())
     }
 }
 
@@ -526,9 +514,9 @@ impl IsDue for TodoColumn {
 
 impl Display for TodoColumn {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "| {} |\n", self.title)?;
+        writeln!(f, "| {} |", self.title)?;
         for todo in self.todos.iter() {
-            write!(f, "| {}\n", todo)?;
+            writeln!(f, "| {todo}")?;
         }
 
         Ok(())
@@ -579,7 +567,7 @@ impl Display for TodoTable {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(f, "=== {} ===", self.title)?;
         for col in self.columns.iter() {
-            write!(f, "{}\n\n", col)?;
+            writeln!(f, "{col}\n")?;
         }
 
         Ok(())
@@ -603,15 +591,7 @@ impl TodoTable {
     /// Searches for the todo by title in a column.
     /// If found, returns a mutable reference to it.
     pub fn get_todo<S: ToString>(&mut self, title: S, col_title: S) -> Option<&mut Todo> {
-        for col in self.columns.iter_mut() {
-            if col.title == col_title.to_string() {
-                if let Some(todo) = col.get(title.to_string()) {
-                    return Some(todo);
-                }
-            }
-        }
-
-        None
+        self.columns.iter_mut().find(|col| col.title == col_title.to_string())?.get(title)
     }
 
     /// Adds a todo to a column.
@@ -649,13 +629,7 @@ impl TodoTable {
 
     /// Searches for a column by name. If found, returns a mutable reference.
     pub fn col<S: ToString>(&mut self, title: S) -> Option<&mut TodoColumn> {
-        for col in self.columns.iter_mut() {
-            if col.title == title.to_string() {
-                return Some(col);
-            }
-        }
-
-        None
+        self.columns.iter_mut().find(|col| col.title == title.to_string())
     }
 }
 
