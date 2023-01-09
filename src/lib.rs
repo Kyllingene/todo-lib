@@ -138,7 +138,7 @@ impl Display for TodoPriority {
 impl TryFrom<&str> for TodoPriority {
     type Error = InvalidPriorityError;
     fn try_from(value: &str) -> Result<Self, Self::Error> {
-        if !value.starts_with("(") || !value.ends_with(")") {
+        if !value.starts_with('(') || !value.ends_with(')') {
             return Err(InvalidPriorityError::MissingParens);
         }
 
@@ -331,7 +331,7 @@ pub enum TodoParseError {
 
 impl Display for TodoParseError {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "{:?}", self)
+        write!(f, "{self:?}")
     }
 }
 
