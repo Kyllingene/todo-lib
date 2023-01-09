@@ -1,15 +1,15 @@
-//! Relatively simple todo management.
+//! Relatively simple todo management. Supports parsing to/from [todo.txt](http://todotxt.org).
 //!
 //! Example:
-//! ```
+//! ```rust
 //! use todo_lib::{Todo, TodoDate, TodoTable, TodoPriority};
 //!
 //! let mut todos = TodoTable::new(Some("Todos"));
 //! todos.add_col("Work");
 //! todos.add_col("Home");
 //!
-//! todos.add_todo(Todo::new("Review documents", TodoDate::Never, None, TodoPriority::None), "Work");
-//! todos.add_todo(Todo::new("Clean desk", TodoDate::Never, None, TodoPriority::None), "Home");
+//! todos.add_todo(Todo::new("Review documents", TodoDate::Never, TodoPriority::None), "Work");
+//! todos.add_todo(Todo::new("Clean desk", TodoDate::Never, TodoPriority::None), "Home");
 //!
 //! let todo1 = todos.get_todo("Clean desk", "Home");
 //! assert!(todo1.is_some(), "Failed to retrieve todo 1");
@@ -23,8 +23,27 @@
 //!
 //! todo2.unwrap().complete();
 //! ```
+//!
+//! Parsing from todo.txt format:
+//! ```rust
+//! use todo_lib::{Todo, IsDue};
+//! use std::str::FromStr;
+//!
+//! let todo_text = "2023-01-07 Create a +todo @library due:2053-01-01";
+//! let mut todo = Todo::from_str(todo_text).unwrap();
+//!
+//! assert_eq!(todo.to_string(), todo_text.to_string());
+//! assert!(!todo.due());
+//!
+//! todo.completed = true;
+//!
+//! assert_eq!(todo.to_string(), "x 2023-01-07 Create a +todo @library due:2053-01-01");
+//! assert!(todo.has_project_tag("todo"));
+//! assert!(todo.has_context_tag("library"));
+//! ```
 
 use std::error::Error;
+use std::str::FromStr;
 use std::{collections::HashSet, fmt::Display};
 
 use datetime::{convenience::Today, DatePiece, LocalDate, LocalDateTime, LocalTime, TimePiece};
@@ -32,6 +51,23 @@ use datetime::{convenience::Today, DatePiece, LocalDate, LocalDateTime, LocalTim
 pub trait IsDue {
     fn due(&self) -> bool;
 }
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord)]
+pub enum InvalidPriorityError {
+    MissingParens,
+    InvalidPriority,
+}
+
+impl Display for InvalidPriorityError {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Self::MissingParens => write!(f, "Missing one or both parenthesis in todo priority"),
+            Self::InvalidPriority => write!(f, "Invalid priority for todo priority"),
+        }
+    }
+}
+
+impl Error for InvalidPriorityError {}
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord, Default)]
 pub enum TodoPriority {
@@ -99,6 +135,45 @@ impl Display for TodoPriority {
     }
 }
 
+impl TryFrom<&str> for TodoPriority {
+    type Error = InvalidPriorityError;
+    fn try_from(value: &str) -> Result<Self, Self::Error> {
+        if !value.starts_with("(") || !value.ends_with(")") {
+            return Err(InvalidPriorityError::MissingParens);
+        }
+
+        match value {
+            "(A)" => Ok(Self::A),
+            "(B)" => Ok(Self::B),
+            "(C)" => Ok(Self::C),
+            "(D)" => Ok(Self::D),
+            "(E)" => Ok(Self::E),
+            "(F)" => Ok(Self::F),
+            "(G)" => Ok(Self::G),
+            "(H)" => Ok(Self::H),
+            "(I)" => Ok(Self::I),
+            "(J)" => Ok(Self::J),
+            "(K)" => Ok(Self::K),
+            "(L)" => Ok(Self::L),
+            "(M)" => Ok(Self::M),
+            "(N)" => Ok(Self::N),
+            "(O)" => Ok(Self::O),
+            "(P)" => Ok(Self::P),
+            "(Q)" => Ok(Self::Q),
+            "(R)" => Ok(Self::R),
+            "(S)" => Ok(Self::S),
+            "(T)" => Ok(Self::T),
+            "(U)" => Ok(Self::U),
+            "(V)" => Ok(Self::V),
+            "(W)" => Ok(Self::W),
+            "(X)" => Ok(Self::X),
+            "(Y)" => Ok(Self::Y),
+            "(Z)" => Ok(Self::Z),
+            _ => Err(InvalidPriorityError::InvalidPriority),
+        }
+    }
+}
+
 impl TodoPriority {
     /// Convenience method for `!= TodoPriority::None`.
     pub fn is_some(&self) -> bool {
@@ -159,21 +234,27 @@ impl Display for TodoDate {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
             Self::Never => write!(f, ""),
-            Self::Always => write!(f, "due:always"),
-            Self::Daily(t) => write!(f, "due:daily-{}:{}:{}", t.hour(), t.minute(), t.second()),
+            Self::Always => write!(f, "due:0000-00-00"),
+            Self::Daily(t) => write!(
+                f,
+                "due:{}:{}:{} rec:daily",
+                t.hour(),
+                t.minute(),
+                t.second()
+            ),
             Self::Day(t) => write!(
                 f,
-                "due:{}-{}-{}",
+                "due:{}-{:01}-{:01}",
+                t.year(),
                 t.month().months_from_january() + 1,
                 t.day(),
-                t.year()
             ),
             Self::Instant(t) => write!(
                 f,
-                "due: {}-{}-{}_{}:{}:{}",
+                "due: {}-{:01}-{:01}_{}:{}:{}",
+                t.year(),
                 t.month().months_from_january() + 1,
                 t.day(),
-                t.year(),
                 t.hour(),
                 t.minute(),
                 t.second()
@@ -242,6 +323,20 @@ impl TodoTag {
     }
 }
 
+#[derive(Clone, Debug)]
+pub enum TodoParseError {
+    BadDate,
+    BadPriority,
+}
+
+impl Display for TodoParseError {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{:?}", self)
+    }
+}
+
+impl Error for TodoParseError {}
+
 /**
  * A todo.
  *
@@ -255,7 +350,6 @@ impl TodoTag {
  * let mut todo = Todo::new(
  *     "Check the mail",
  *     TodoDate::Always,
- *     None,
  *     TodoPriority::None,
  * );
  *
@@ -269,7 +363,6 @@ impl TodoTag {
 #[derive(Debug, Clone, Default)]
 pub struct Todo {
     pub title: String,
-    pub description: Option<String>,
 
     pub completed: bool,
     pub priority: TodoPriority,
@@ -298,7 +391,7 @@ impl Display for Todo {
         let completion = if self.completion_date.is_some() && self.created.is_some() {
             let date = self.completion_date.unwrap();
             format!(
-                "{}-{}-{} ",
+                "{}-{:02}-{:02} ",
                 date.year(),
                 date.month().months_from_january() + 1,
                 date.day(),
@@ -309,7 +402,7 @@ impl Display for Todo {
         let creation = if self.created.is_some() {
             let date = self.created.unwrap();
             format!(
-                "{}-{}-{} ",
+                "{}-{:02}-{:02} ",
                 date.year(),
                 date.month().months_from_january() + 1,
                 date.day(),
@@ -317,28 +410,68 @@ impl Display for Todo {
         } else {
             "".into()
         };
-        let description = if self.description.is_some() {
-            format!("{} | {} ", self.title, self.description.clone().unwrap())
-        } else {
-            format!("{} ", self.title)
-        };
+        let description = self.title.clone();
         let deadline = self.deadline.clone();
 
-        write!(
-            f,
-            "{tick}{priority}{completion}{creation}{description}{deadline}",
-        )
+        let out = format!("{tick}{priority}{completion}{creation}{description} {deadline}",);
+
+        write!(f, "{}", out.trim())
+    }
+}
+
+impl FromStr for Todo {
+    type Err = TodoParseError;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        let mut parts = s.split(' ').peekable();
+        let mut todo = Todo::default();
+
+        if s.starts_with("x ") {
+            todo.completed = true;
+            parts.next();
+        }
+
+        let mut created = None;
+        let mut completed = None;
+        let mut priority = TodoPriority::None;
+        let mut description = String::new();
+        let deadline = TodoDate::Never;
+
+        while let Some(part) = parts.next() {
+            match TodoPriority::try_from(part) {
+                Ok(p) => priority = p,
+                Err(e) => match e {
+                    InvalidPriorityError::InvalidPriority => {
+                        return Err(TodoParseError::BadPriority)
+                    }
+                    _ => match LocalDate::from_str(part) {
+                        Ok(date) => completed = std::mem::replace(&mut created, Some(date)),
+                        Err(_) => {
+                            description = parts.collect::<Vec<&str>>().join(" ");
+                            description.insert(0, ' ');
+                            description.insert_str(0, part);
+                            break;
+                        }
+                    },
+                },
+            }
+        }
+
+        // TODO: implement deadline parsing
+
+        todo.title = description;
+        todo.created = created;
+        todo.completion_date = completed;
+        todo.priority = priority;
+        todo.deadline = deadline;
+
+        Ok(todo)
     }
 }
 
 impl Todo {
-    /// Returns a new Todo.
-    pub fn new<S: ToString>(
-        title: S,
-        deadline: TodoDate,
-        description: Option<S>,
-        priority: TodoPriority,
-    ) -> Self {
+    /// Returns a new todo.
+    pub fn new<S: ToString>(title: S, deadline: TodoDate, priority: TodoPriority) -> Self {
         Todo {
             deadline,
             created: Some(LocalDate::today()),
@@ -347,7 +480,6 @@ impl Todo {
             priority,
 
             title: title.to_string(),
-            description: description.map(|s| s.to_string()),
             completion_date: None,
         }
     }
@@ -361,24 +493,18 @@ impl Todo {
     }
 
     /// Checks if the todo has a certain tag, started with `start`
-    fn has_tag_raw(&self, start: char, t: String) -> bool {
+    fn has_tag_raw<S: ToString>(&self, start: char, t: S) -> bool {
         let mut tag = String::new();
         let mut in_tag = false;
         let mut last_char = ' ';
 
-        let data = if self.description.is_some() {
-            format!("{} {}", self.title, self.description.clone().unwrap())
-        } else {
-            self.title.clone()
-        };
-
-        for ch in data.chars() {
+        for ch in self.title.chars() {
             if ch == start && last_char == ' ' {
                 in_tag = true;
             } else if in_tag && !ch.is_whitespace() {
                 tag.push(ch);
             } else if in_tag && ch.is_whitespace() {
-                if tag == t {
+                if tag == t.to_string() {
                     return true;
                 }
 
@@ -393,13 +519,13 @@ impl Todo {
     }
 
     /// Checks if the todo has a certain project tag.
-    pub fn has_project_tag(&self, tag: String) -> bool {
-        self.has_tag_raw('+', tag)
+    pub fn has_project_tag<S: ToString>(&self, tag: S) -> bool {
+        self.has_tag_raw('+', tag.to_string())
     }
 
     /// Checks if the todo has a certain context tag.
-    pub fn has_context_tag(&self, tag: String) -> bool {
-        self.has_tag_raw('@', tag)
+    pub fn has_context_tag<S: ToString>(&self, tag: S) -> bool {
+        self.has_tag_raw('@', tag.to_string())
     }
 
     /// Checks if the todo has a certain tag.
@@ -419,13 +545,7 @@ impl Todo {
         let mut in_context_tag = false;
         let mut last_char = ' ';
 
-        let data = if self.description.is_some() {
-            format!("{} {}", self.title, self.description.clone().unwrap())
-        } else {
-            self.title.clone()
-        };
-
-        for ch in data.chars() {
+        for ch in self.title.chars() {
             if ch == '+' && last_char == ' ' {
                 in_project_tag = true;
                 in_context_tag = false;
@@ -461,8 +581,8 @@ impl Todo {
  * use todo_lib::{Todo, TodoColumn, TodoDate, TodoPriority};
  *
  * let mut todos = TodoColumn::new("Todo");
- * todos.add(Todo::new("Buy mangos", TodoDate::Never, None, TodoPriority::None));
- * todos.add(Todo::new("Sort stamps", TodoDate::Never, None, TodoPriority::None));
+ * todos.add(Todo::new("Buy mangos", TodoDate::Never, TodoPriority::None));
+ * todos.add(Todo::new("Sort stamps", TodoDate::Never, TodoPriority::None));
  *
  * todos.get("Buy mangos").expect("Failed to get todo").complete();
  * todos.pop("Sort stamps").expect("Failed to remove todo");
@@ -501,7 +621,9 @@ impl TodoColumn {
 
     /// Searches for the todo by title. If found, returns a mutable reference to it.
     pub fn get<S: ToString>(&mut self, title: S) -> Option<&mut Todo> {
-        self.todos.iter_mut().find(|todo| todo.title == title.to_string())
+        self.todos
+            .iter_mut()
+            .find(|todo| todo.title == title.to_string())
     }
 }
 
@@ -527,15 +649,15 @@ impl Display for TodoColumn {
  * A table of todos.
  *
  * Example:
- * ```
+ * ```rust
  * use todo_lib::{Todo, TodoDate, TodoTable, TodoPriority};
  *
  * let mut todos = TodoTable::new(Some("Todos"));
  * todos.add_col("Work");
  * todos.add_col("Home");
  *
- * todos.add_todo(Todo::new("Review documents", TodoDate::Never, None, TodoPriority::None), "Work");
- * todos.add_todo(Todo::new("Clean desk", TodoDate::Never, None, TodoPriority::None), "Home");
+ * todos.add_todo(Todo::new("Review documents", TodoDate::Never, TodoPriority::None), "Work");
+ * todos.add_todo(Todo::new("Clean desk", TodoDate::Never, TodoPriority::None), "Home");
  *
  * let todo1 = todos.get_todo("Clean desk", "Home");
  * assert!(todo1.is_some(), "Failed to retrieve todo 1");
@@ -591,7 +713,10 @@ impl TodoTable {
     /// Searches for the todo by title in a column.
     /// If found, returns a mutable reference to it.
     pub fn get_todo<S: ToString>(&mut self, title: S, col_title: S) -> Option<&mut Todo> {
-        self.columns.iter_mut().find(|col| col.title == col_title.to_string())?.get(title)
+        self.columns
+            .iter_mut()
+            .find(|col| col.title == col_title.to_string())?
+            .get(title)
     }
 
     /// Adds a todo to a column.
@@ -629,7 +754,9 @@ impl TodoTable {
 
     /// Searches for a column by name. If found, returns a mutable reference.
     pub fn col<S: ToString>(&mut self, title: S) -> Option<&mut TodoColumn> {
-        self.columns.iter_mut().find(|col| col.title == title.to_string())
+        self.columns
+            .iter_mut()
+            .find(|col| col.title == title.to_string())
     }
 }
 
@@ -644,14 +771,8 @@ mod tests {
         todos.add_col("A");
         todos.add_col("B");
 
-        todos.add_todo(
-            Todo::new("1", TodoDate::Never, None, TodoPriority::None),
-            "A",
-        );
-        todos.add_todo(
-            Todo::new("2", TodoDate::Never, None, TodoPriority::None),
-            "B",
-        );
+        todos.add_todo(Todo::new("1", TodoDate::Never, TodoPriority::None), "A");
+        todos.add_todo(Todo::new("2", TodoDate::Never, TodoPriority::None), "B");
 
         let todo1 = todos.get_todo("1", "A");
         assert!(todo1.is_some(), "Failed to retrieve todo 1");
@@ -672,7 +793,6 @@ mod tests {
         let mut todo = Todo::new(
             "",
             TodoDate::Instant(LocalDateTime::at(0)),
-            None,
             TodoPriority::None,
         );
         assert!(
@@ -688,12 +808,7 @@ mod tests {
             todo.deadline
         );
 
-        let todo = Todo::new(
-            "",
-            TodoDate::Day(LocalDate::today()),
-            None,
-            TodoPriority::None,
-        );
+        let todo = Todo::new("", TodoDate::Day(LocalDate::today()), TodoPriority::None);
         assert!(
             todo.due(),
             "Should be due, isn't; deadline{}",
@@ -703,7 +818,6 @@ mod tests {
         let todo = Todo::new(
             "",
             TodoDate::Daily(LocalTime::midnight()),
-            None,
             TodoPriority::None,
         );
         assert!(
@@ -715,7 +829,6 @@ mod tests {
         let todo = Todo::new(
             "",
             TodoDate::Daily(LocalTime::hms(23, 59, 59).expect("Failed to create LocalTime")),
-            None,
             TodoPriority::None,
         );
         assert!(
@@ -724,7 +837,7 @@ mod tests {
             todo.deadline
         );
 
-        let todo = Todo::new("", TodoDate::Always, None, TodoPriority::None);
+        let todo = Todo::new("", TodoDate::Always, TodoPriority::None);
         assert!(
             todo.due(),
             "Should be due, isn't; deadline{}",
@@ -741,18 +854,13 @@ mod tests {
 
     #[test]
     fn todo_display() {
-        let mut todo = Todo::new(
-            "Todo #1",
-            TodoDate::Always,
-            Some("This is a todo"),
-            TodoPriority::B,
-        );
+        let mut todo = Todo::new("Todo #1", TodoDate::Always, TodoPriority::B);
 
         let today = LocalDate::today();
         assert_eq!(
             todo.to_string(),
             format!(
-                "(B) {}-{}-{} Todo #1 | This is a todo due:always",
+                "(B) {}-{:02}-{:02} Todo #1 due:0000-00-00",
                 today.year(),
                 today.month().months_from_january() + 1,
                 today.day()
@@ -763,7 +871,7 @@ mod tests {
         assert_eq!(
             todo.to_string(),
             format!(
-                "x (B) {0}-{1}-{2} {0}-{1}-{2} Todo #1 | This is a todo due:always",
+                "x (B) {0}-{1:02}-{2:02} {0}-{1:02}-{2:02} Todo #1 due:0000-00-00",
                 today.year(),
                 today.month().months_from_january() + 1,
                 today.day()
@@ -800,9 +908,8 @@ mod tests {
         );
 
         let a = Todo::new(
-            "+1 @2 3+4",
+            "+1 @2 3+4 @a +b-c @def@ghi jk@lm",
             TodoDate::Never,
-            Some("@a +b-c @def@ghi jk@lm"),
             TodoPriority::None,
         );
         let tags = a.tags();
@@ -835,5 +942,25 @@ mod tests {
             !tags.contains(&TodoTag::context("lm").unwrap()),
             "Shouldn't find @lm"
         );
+    }
+
+    #[test]
+    fn todo_txt_parsing() {
+        let todo_text = "2023-01-07 Create a +todo @library due:2053-01-01";
+        let mut todo = Todo::from_str(todo_text).unwrap();
+
+        println!("{:?}", todo);
+
+        assert_eq!(todo.to_string(), todo_text.to_string());
+        assert!(!todo.due());
+
+        todo.completed = true;
+
+        assert_eq!(
+            todo.to_string(),
+            "x 2023-01-07 Create a +todo @library due:2053-01-01"
+        );
+        assert!(todo.has_project_tag("todo"));
+        assert!(todo.has_context_tag("library"));
     }
 }
