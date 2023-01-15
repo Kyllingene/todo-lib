@@ -186,21 +186,19 @@ impl TodoPriority {
     }
 }
 
-/**
- * A due date for a Todo. Encapsulates data structures from crate `datetime`.
- *
- * Example:
- * ```
- * use todo_lib::{TodoDate, IsDue};
- * use datetime::{LocalDate, convenience::Today};
- *
- * let today_deadline = TodoDate::Day(LocalDate::today());
- * assert!(today_deadline.due());
- *
- * let indefinite_deadline = TodoDate::Never;
- * assert!(!indefinite_deadline.due());
- * ```
- */
+/// A due date for a Todo. Encapsulates data structures from crate `datetime`.
+///
+/// Example:
+/// ```
+/// use todo_lib::{TodoDate, IsDue};
+/// use datetime::{LocalDate, convenience::Today};
+///
+/// let today_deadline = TodoDate::Day(LocalDate::today());
+/// assert!(today_deadline.due());
+///
+/// let indefinite_deadline = TodoDate::Never;
+/// assert!(!indefinite_deadline.due());
+/// ```
 #[derive(Debug, Clone, Default)]
 pub enum TodoDate {
     #[default]
@@ -337,29 +335,27 @@ impl Display for TodoParseError {
 
 impl Error for TodoParseError {}
 
-/**
- * A todo.
- *
- * When creating with `Todo::new`, sets `created` to the current time.
- * When creating with `Todo::default`, sets `created` to None.
- *
- * Example:
- * ```
- * use todo_lib::{Todo, TodoDate, IsDue, TodoPriority};
- *
- * let mut todo = Todo::new(
- *     "Check the mail",
- *     TodoDate::Always,
- *     TodoPriority::None,
- * );
- *
- * assert!(!todo.completed && todo.due());
- *
- * todo.complete();
- *
- * assert!(todo.completed && !todo.due());
- * ```
- */
+/// A todo.
+///
+/// When creating with `Todo::new`, sets `created` to the current time.
+/// When creating with `Todo::default`, sets `created` to None.
+///
+/// Example:
+/// ```
+/// use todo_lib::{Todo, TodoDate, IsDue, TodoPriority};
+///
+/// let mut todo = Todo::new(
+///     "Check the mail",
+///     TodoDate::Always,
+///     TodoPriority::None,
+/// );
+///
+/// assert!(!todo.completed && todo.due());
+///
+/// todo.complete();
+///
+/// assert!(todo.completed && !todo.due());
+/// ```
 #[derive(Debug, Clone, Default)]
 pub struct Todo {
     pub title: String,
@@ -573,21 +569,19 @@ impl Todo {
     }
 }
 
-/**
- * A list of todos, under a title.
- *
- * Example:
- * ```
- * use todo_lib::{Todo, TodoColumn, TodoDate, TodoPriority};
- *
- * let mut todos = TodoColumn::new("Todo");
- * todos.add(Todo::new("Buy mangos", TodoDate::Never, TodoPriority::None));
- * todos.add(Todo::new("Sort stamps", TodoDate::Never, TodoPriority::None));
- *
- * todos.get("Buy mangos").expect("Failed to get todo").complete();
- * todos.pop("Sort stamps").expect("Failed to remove todo");
- * ```
- */
+/// A list of todos, under a title.
+///
+/// Example:
+/// ```
+/// use todo_lib::{Todo, TodoColumn, TodoDate, TodoPriority};
+///
+/// let mut todos = TodoColumn::new("Todo");
+/// todos.add(Todo::new("Buy mangos", TodoDate::Never, TodoPriority::None));
+/// todos.add(Todo::new("Sort stamps", TodoDate::Never, TodoPriority::None));
+///
+/// todos.get("Buy mangos").expect("Failed to get todo").complete();
+/// todos.pop("Sort stamps").expect("Failed to remove todo");
+/// ```
 #[derive(Debug, Clone)]
 pub struct TodoColumn {
     pub todos: Vec<Todo>,
@@ -645,33 +639,31 @@ impl Display for TodoColumn {
     }
 }
 
-/**
- * A table of todos.
- *
- * Example:
- * ```rust
- * use todo_lib::{Todo, TodoDate, TodoTable, TodoPriority};
- *
- * let mut todos = TodoTable::new(Some("Todos"));
- * todos.add_col("Work");
- * todos.add_col("Home");
- *
- * todos.add_todo(Todo::new("Review documents", TodoDate::Never, TodoPriority::None), "Work");
- * todos.add_todo(Todo::new("Clean desk", TodoDate::Never, TodoPriority::None), "Home");
- *
- * let todo1 = todos.get_todo("Clean desk", "Home");
- * assert!(todo1.is_some(), "Failed to retrieve todo 1");
- *
- * todo1.unwrap().complete();
- *
- * todos.move_todo("Clean desk".into(), "Home", "Work");
- *
- * let todo2 = todos.get_todo("Review documents", "Work");
- * assert!(todo2.is_some(), "Failed to retrieve todo 2");
- *
- * todo2.unwrap().complete();
- * ```
- */
+/// A table of todos.
+///
+/// Example:
+/// ```rust
+/// use todo_lib::{Todo, TodoDate, TodoTable, TodoPriority};
+///
+/// let mut todos = TodoTable::new(Some("Todos"));
+/// todos.add_col("Work");
+/// todos.add_col("Home");
+///
+/// todos.add_todo(Todo::new("Review documents", TodoDate::Never, TodoPriority::None), "Work");
+/// todos.add_todo(Todo::new("Clean desk", TodoDate::Never, TodoPriority::None), "Home");
+///
+/// let todo1 = todos.get_todo("Clean desk", "Home");
+/// assert!(todo1.is_some(), "Failed to retrieve todo 1");
+///
+/// todo1.unwrap().complete();
+///
+/// todos.move_todo("Clean desk".into(), "Home", "Work");
+///
+/// let todo2 = todos.get_todo("Review documents", "Work");
+/// assert!(todo2.is_some(), "Failed to retrieve todo 2");
+///
+/// todo2.unwrap().complete();
+/// ```
 #[derive(Debug, Clone)]
 pub struct TodoTable {
     title: String,
