@@ -52,6 +52,55 @@ pub trait IsDue {
     fn due(&self) -> bool;
 }
 
+#[derive(Clone, Debug, Default)]
+pub struct Map<K: PartialEq, V: PartialEq> {
+    pub data: Vec<(K, V)>,
+}
+
+impl<K: PartialEq + Display, V: PartialEq + Display> Display for Map<K, V> {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        for (k, v) in self.data.iter() {
+            write!(f, " {k}:{v}")?;
+        }
+
+        Ok(())
+    }
+}
+
+impl<K: PartialEq, V: PartialEq> Map<K, V> {
+    pub fn new() -> Self {
+        Self { data: Vec::new() }
+    }
+
+    pub fn get(&self, key: &K) -> Option<&V> {
+        self.data.iter().find(|(k, _)| k == key).map(|(_, v)| v)
+    }
+
+    pub fn insert(&mut self, key: K, val: V) {
+        for pair in self.data.iter_mut() {
+            if pair.0 == key {
+                pair.1 = val;
+                return;
+            }
+        }
+
+        self.data.push((key, val));
+    }
+
+    pub fn remove(&mut self, key: &K) {
+        let mut remove_index = None;
+        for (i, (k, _)) in self.data.iter().enumerate() {
+            if k == key {
+                remove_index = Some(i);
+            }
+        }
+
+        if let Some(i) = remove_index {
+            self.data.remove(i);
+        }
+    }
+}
+
 #[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord)]
 pub enum InvalidPriorityError {
     MissingParens,
@@ -242,14 +291,14 @@ impl Display for TodoDate {
             ),
             Self::Day(t) => write!(
                 f,
-                "due:{}-{:01}-{:01}",
+                "due:{}-{:02}-{:02}",
                 t.year(),
                 t.month().months_from_january() + 1,
                 t.day(),
             ),
             Self::Instant(t) => write!(
                 f,
-                "due: {}-{:01}-{:01}_{}:{}:{}",
+                "due: {}-{:02}-{:02}_{}:{}:{}",
                 t.year(),
                 t.month().months_from_january() + 1,
                 t.day(),
@@ -287,7 +336,7 @@ impl Error for TagContainsWhitespaceError {}
 /// A todo tag.
 ///
 /// NOTE: ONLY use `TodoTag::project` and `TodoTag::context` to create a tag.
-/// This ensures that the tags contain no whitespace.
+/// This ensures that the tags are valid.
 #[derive(Clone, Debug, PartialEq, Eq, Hash)]
 pub enum TodoTag {
     Project(String),
@@ -356,12 +405,14 @@ impl Error for TodoParseError {}
 ///
 /// assert!(todo.completed && !todo.due());
 /// ```
+
 #[derive(Debug, Clone, Default)]
 pub struct Todo {
     pub title: String,
 
     pub completed: bool,
     pub priority: TodoPriority,
+    pub metadata: Map<String, String>,
 
     pub deadline: TodoDate,
     pub created: Option<LocalDate>,
@@ -387,7 +438,7 @@ impl Display for Todo {
         let completion = if self.completion_date.is_some() && self.created.is_some() {
             let date = self.completion_date.unwrap();
             format!(
-                "{}-{:02}-{:02} ",
+                "{:04}-{:02}-{:02} ",
                 date.year(),
                 date.month().months_from_january() + 1,
                 date.day(),
@@ -398,7 +449,7 @@ impl Display for Todo {
         let creation = if self.created.is_some() {
             let date = self.created.unwrap();
             format!(
-                "{}-{:02}-{:02} ",
+                "{:04}-{:02}-{:02} ",
                 date.year(),
                 date.month().months_from_january() + 1,
                 date.day(),
@@ -406,10 +457,12 @@ impl Display for Todo {
         } else {
             "".into()
         };
-        let description = self.title.clone();
-        let deadline = self.deadline.clone();
+        let description = self.title.to_string();
+        let deadline = self.deadline.to_string();
+        let metadata = self.metadata.to_string();
 
-        let out = format!("{tick}{priority}{completion}{creation}{description} {deadline}",);
+        let out =
+            format!("{tick}{priority}{completion}{creation}{description} {deadline}{metadata}",);
 
         write!(f, "{}", out.trim())
     }
@@ -430,32 +483,41 @@ impl FromStr for Todo {
         let mut created = None;
         let mut completed = None;
         let mut priority = TodoPriority::None;
-        let mut description = String::new();
-        let deadline = TodoDate::Never;
+        let mut description = String::from(" ");
+        let mut metadata = Map::new();
+        let mut deadline = TodoDate::Never;
 
-        while let Some(part) = parts.next() {
+        for part in parts {
             match TodoPriority::try_from(part) {
                 Ok(p) => priority = p,
                 Err(e) => match e {
                     InvalidPriorityError::InvalidPriority => {
                         return Err(TodoParseError::BadPriority)
                     }
-                    _ => match LocalDate::from_str(part) {
-                        Ok(date) => completed = std::mem::replace(&mut created, Some(date)),
-                        Err(_) => {
-                            description = parts.collect::<Vec<&str>>().join(" ");
-                            description.insert(0, ' ');
-                            description.insert_str(0, part);
-                            break;
+                    _ => {
+                        if let Ok(date) = LocalDate::from_str(part) {
+                            completed = std::mem::replace(&mut created, Some(date))
+                        } else if part.matches(':').count() == 1 {
+                            let meta: Vec<&str> = part.split(':').collect();
+                            metadata.insert(meta[0].to_string(), meta[1].to_string());
+                        } else if !part.is_empty() && !part.chars().all(|ch| ch.is_whitespace()) {
+                            description.push(' ');
+                            description.push_str(part.trim());
                         }
-                    },
+                    }
                 },
             }
         }
 
-        // TODO: implement deadline parsing
+        if let Some(date) = metadata.get(&"due".to_string()) {
+            if let Ok(date) = LocalDate::from_str(date) {
+                metadata.remove(&"due".to_string());
+                deadline = TodoDate::Day(date);
+            }
+        }
 
-        todo.title = description;
+        todo.title = description.trim().to_string();
+        todo.metadata = metadata;
         todo.created = created;
         todo.completion_date = completed;
         todo.priority = priority;
@@ -474,6 +536,7 @@ impl Todo {
 
             completed: false,
             priority,
+            metadata: Map::new(),
 
             title: title.to_string(),
             completion_date: None,
@@ -509,6 +572,10 @@ impl Todo {
             }
 
             last_char = ch;
+        }
+
+        if tag == t.to_string() {
+            return true;
         }
 
         false
@@ -566,6 +633,28 @@ impl Todo {
         }
 
         set
+    }
+
+    /// Returns all the metadata of the todo.
+    pub fn metadata(&self) -> &Map<String, String> {
+        &self.metadata
+    }
+
+    /// Sets a metadata tag to the todo.
+    pub fn set_meta<S: ToString>(&mut self, key: S, val: S) {
+        self.metadata.insert(key.to_string(), val.to_string());
+    }
+
+    /// Returns an option containing the value corresponding to the key.
+    ///
+    /// Returns None if the key doesn't exist.
+    pub fn get_meta<S: ToString>(&self, key: &S) -> Option<&String> {
+        self.metadata.get(&key.to_string())
+    }
+
+    /// Removes the given metadata from the todo, if it exists.
+    pub fn delete_meta(&mut self, key: &String) {
+        self.metadata.remove(key);
     }
 }
 
@@ -941,8 +1030,6 @@ mod tests {
         let todo_text = "2023-01-07 Create a +todo @library due:2053-01-01";
         let mut todo = Todo::from_str(todo_text).unwrap();
 
-        println!("{:?}", todo);
-
         assert_eq!(todo.to_string(), todo_text.to_string());
         assert!(!todo.due());
 
@@ -952,7 +1039,25 @@ mod tests {
             todo.to_string(),
             "x 2023-01-07 Create a +todo @library due:2053-01-01"
         );
+
         assert!(todo.has_project_tag("todo"));
         assert!(todo.has_context_tag("library"));
+    }
+
+    #[test]
+    fn todo_txt_metadata() {
+        let todo_text = "2023-01-16 Add metadata to the +todo @library due:2000-01-01 exam:ple";
+        let mut todo = Todo::from_str(todo_text).unwrap();
+
+        assert!(todo.due());
+        assert_eq!(todo.get_meta(&"exam".to_string()), Some(&"ple".to_string()),);
+
+        todo.delete_meta(&"exam".to_string());
+        todo.set_meta("key".to_string(), "val".to_string());
+
+        assert_eq!(
+            todo.to_string(),
+            "2023-01-16 Add metadata to the +todo @library due:2000-01-01 key:val",
+        );
     }
 }
