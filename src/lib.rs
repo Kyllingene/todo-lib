@@ -708,6 +708,25 @@ impl TodoColumn {
             .iter_mut()
             .find(|todo| todo.title == title.to_string())
     }
+
+    /// Returns the first todo found with a given metadata key.
+    ///
+    /// If no such todo is found, returns None.
+    pub fn has_meta<S: ToString>(&mut self, key: S) -> Option<&mut Todo> {
+        self.todos
+            .iter_mut()
+            .find(|todo| todo.get_meta(key.to_string()).is_some())
+    }
+
+    /// Returns the first todo found with a given metadata key:val pair.
+    ///
+    /// If no such todo is found, returns None.
+    pub fn get_meta<S: ToString>(&mut self, key: S, val: S) -> Option<&mut Todo> {
+        self.todos.iter_mut().find(|todo| {
+            todo.get_meta(key.to_string())
+                .map_or(false, |v| v == &val.to_string())
+        })
+    }
 }
 
 impl IsDue for TodoColumn {
