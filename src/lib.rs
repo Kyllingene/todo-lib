@@ -858,6 +858,26 @@ impl TodoTable {
             .iter_mut()
             .find(|col| col.title == title.to_string())
     }
+
+    /// Returns the first todo found in a column with a given metadata key.
+    ///
+    /// If no such todo is found, returns None.
+    pub fn has_meta<S: ToString>(&mut self, title: S, key: S) -> Option<&mut Todo> {
+        self.columns
+            .iter_mut()
+            .find(|col| col.title == title.to_string())?
+            .has_meta(key.to_string())
+    }
+
+    /// Returns the first todo found in a column with a given metadata key:val pair.
+    ///
+    /// If no such todo is found, returns None.
+    pub fn get_meta<S: ToString>(&mut self, title: S, key: S, val: S) -> Option<&mut Todo> {
+        self.columns
+            .iter_mut()
+            .find(|col| col.title == title.to_string())?
+            .get_meta(key.to_string(), val.to_string())
+    }
 }
 
 #[cfg(test)]
