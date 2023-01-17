@@ -648,7 +648,7 @@ impl Todo {
     /// Returns an option containing the value corresponding to the key.
     ///
     /// Returns None if the key doesn't exist.
-    pub fn get_meta<S: ToString>(&self, key: &S) -> Option<&String> {
+    pub fn get_meta<S: ToString>(&self, key: S) -> Option<&String> {
         self.metadata.get(&key.to_string())
     }
 
