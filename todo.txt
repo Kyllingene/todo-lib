@@ -1,3 +1,0 @@
-(B) Add parsing to +todo.txt
-(B) Add parsing from +todo.txt
-x (A) Make compatible with +todo.txt standards
