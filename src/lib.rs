@@ -107,11 +107,11 @@ pub enum TodoSegment {
 }
 
 impl TodoSegment {
-    pub fn to_string(&self, style: StyleScheme) -> String {
+    pub fn to_string(&self, style: StyleScheme, reset: &str) -> String {
         match self {
-            TodoSegment::String(s) => format!("{}{s}", style.description),
+            TodoSegment::String(s) => format!("{}{s}{reset}", style.description),
             TodoSegment::Tag(tag) => format!(
-                "{}{tag}",
+                "{}{tag}{reset}",
                 match tag {
                     TodoTag::Context(_) => style.context,
                     TodoTag::Project(_) => style.project,
@@ -125,21 +125,23 @@ impl TodoSegment {
 pub struct TodoDescription(Vec<TodoSegment>);
 
 impl TodoDescription {
-    pub fn to_string(&self, style: StyleScheme) -> String {
+    pub fn to_string(&self, style: StyleScheme, reset: &str) -> String {
         let mut s = String::new();
 
-        if self.0.len() == 0 {
+        if self.0.is_empty() {
             return s;
         }
 
         let end = self.0.len() - 1;
         for (i, seg) in self.0.iter().enumerate() {
-            s.push_str(&seg.to_string(style));
+            s.push_str(&seg.to_string(style, reset));
 
             if i != end {
                 s.push(' ');
             }
         }
+
+        s.push_str(reset);
 
         s
     }
@@ -329,12 +331,12 @@ impl Todo {
         );
 
         let mut deadline = format!("{}{}{reset}", style.deadline, self.deadline);
-        if !(metadata.is_empty() || deadline.is_empty()) {
+        if !(self.metadata.is_empty() || self.deadline.is_none()) {
             deadline += " ";
         }
 
-        let mut description = format!("{}{reset}", self.description.to_string(style));
-        if !(deadline.is_empty() || description.is_empty()) {
+        let mut description = self.description.to_string(style, reset);
+        if !((self.metadata.is_empty() && self.deadline.is_none()) || self.description.0.is_empty()) {
             description += " ";
         }
 
@@ -385,8 +387,8 @@ impl Display for Todo {
             deadline += " ";
         }
 
-        let mut description = self.description.to_string(StyleScheme::default());
-        if !(deadline.is_empty() || description.is_empty()) {
+        let mut description = self.description.to_string(StyleScheme::default(), "");
+        if !((metadata.is_empty() && deadline.is_empty()) || description.is_empty()) {
             description += " ";
         }
 

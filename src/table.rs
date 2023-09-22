@@ -38,7 +38,7 @@ impl TodoColumn {
     /// Searches for the todo by title. If found, returns it, and removes it from the column.
     pub fn pop<S: ToString>(&mut self, title: S) -> Option<Todo> {
         for (i, todo) in self.todos.iter().enumerate() {
-            if todo.description.to_string(StyleScheme::default()) == title.to_string() {
+            if todo.description.to_string(StyleScheme::default(), "") == title.to_string() {
                 return Some(self.todos.remove(i));
             }
         }
@@ -50,7 +50,7 @@ impl TodoColumn {
     pub fn get<S: ToString>(&mut self, title: S) -> Option<&mut Todo> {
         self.todos
             .iter_mut()
-            .find(|todo| todo.description.to_string(StyleScheme::default()) == title.to_string())
+            .find(|todo| todo.description.to_string(StyleScheme::default(), "") == title.to_string())
     }
 
     /// Returns the first todo found with a given metadata key.

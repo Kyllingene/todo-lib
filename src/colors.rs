@@ -6,28 +6,29 @@ pub const YELLOW: &str = "\x1b[38;5;3m";
 pub const DBLUE: &str = "\x1b[38;5;4m";
 pub const PURPLE: &str = "\x1b[38;5;5m";
 pub const LBLUE: &str = "\x1b[38;5;6m";
+pub const GRAY: &str = "\x1b[38;5;7m";
 
 pub const BOLD: &str = "\x1b[1m";
 pub const ITALIC: &str = "\x1b[3m";
 pub const UNDER: &str = "\x1b[4m";
-pub const FADE: &str = "\x1b[2m\x1b[38;5;7m";
+pub const FADE: &str = "\x1b[2m";
 
 pub(crate) const RESET: &str = "\x1b[0m";
 
 pub const DEFAULT_STYLE: StyleScheme<'_> = StyleScheme {
-    faded: FADE,
+    faded: formatcp!("{FADE}{GRAY}"),
 
     tick: "",
-    priority: formatcp!("{}{}", BOLD, LBLUE),
-    completion: formatcp!("{}{}", UNDER, PURPLE),
-    creation: formatcp!("{}{}", UNDER, YELLOW),
+    priority: formatcp!("{BOLD}{LBLUE}"),
+    completion: formatcp!("{UNDER}{PURPLE}"),
+    creation: formatcp!("{UNDER}{YELLOW}"),
 
-    description: ITALIC,
-    context: formatcp!("{}{}", ITALIC, GREEN),
-    project: formatcp!("{}{}", ITALIC, YELLOW),
+    description: "",
+    context: formatcp!("{ITALIC}{GREEN}"),
+    project: formatcp!("{ITALIC}{YELLOW}"),
 
-    deadline: formatcp!("{}{}", BOLD, RED),
-    metadata: "",
+    deadline: formatcp!("{BOLD}{RED}"),
+    metadata: formatcp!("{ITALIC}{DBLUE}"),
 };
 
 #[derive(Clone, Copy, PartialEq, Eq, Debug, Default)]
