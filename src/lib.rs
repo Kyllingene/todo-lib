@@ -303,7 +303,7 @@ impl Todo {
         };
 
         let priority = if self.priority.is_some() {
-            format!("{}{}{}", style.priority, self.priority, reset)
+            format!("{}{}{} ", style.priority, self.priority, reset)
         } else {
             "".into()
         };
