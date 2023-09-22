@@ -63,6 +63,6 @@ impl<K: PartialEq, V: PartialEq> Map<K, V> {
     }
 
     pub fn is_empty(&self) -> bool {
-    	self.data.is_empty()
+        self.data.is_empty()
     }
 }

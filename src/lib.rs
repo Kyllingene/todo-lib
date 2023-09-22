@@ -310,25 +310,33 @@ impl Todo {
 
         let completion = if self.creation.is_some() {
             if let Some(date) = self.completion_date {
-                format!("{}{:04}-{:02}-{:02}{reset} ", style.completion, date.year(), date.month(), date.day())
+                format!(
+                    "{}{:04}-{:02}-{:02}{reset} ",
+                    style.completion,
+                    date.year(),
+                    date.month(),
+                    date.day()
+                )
             } else {
                 "".into()
             }
         } else {
             "".into()
         };
-        
+
         let creation = if let Some(date) = self.creation {
-            format!("{}{:04}-{:02}-{:02}{reset} ", style.creation, date.year(), date.month(), date.day())
+            format!(
+                "{}{:04}-{:02}-{:02}{reset} ",
+                style.creation,
+                date.year(),
+                date.month(),
+                date.day()
+            )
         } else {
             "".into()
         };
 
-        let metadata = format!(
-            "{}{}{reset}",
-            style.metadata,
-            self.metadata,
-        );
+        let metadata = format!("{}{}{reset}", style.metadata, self.metadata,);
 
         let mut deadline = format!("{}{}{reset}", style.deadline, self.deadline);
         if !(self.metadata.is_empty() || self.deadline.is_none()) {
@@ -336,13 +344,12 @@ impl Todo {
         }
 
         let mut description = self.description.to_string(style, reset);
-        if !((self.metadata.is_empty() && self.deadline.is_none()) || self.description.0.is_empty()) {
+        if !((self.metadata.is_empty() && self.deadline.is_none()) || self.description.0.is_empty())
+        {
             description += " ";
         }
 
-        format!(
-            "{tick}{priority}{completion}{creation}{description}{deadline}{metadata}"
-        )
+        format!("{tick}{priority}{completion}{creation}{description}{deadline}{metadata}")
     }
 }
 
@@ -373,7 +380,7 @@ impl Display for Todo {
         } else {
             "".into()
         };
-        
+
         let creation = if let Some(date) = self.creation {
             format!("{:04}-{:02}-{:02} ", date.year(), date.month(), date.day(),)
         } else {
@@ -421,8 +428,7 @@ impl FromStr for Todo {
 
         if let Some(part) = parts.peek() {
             if let Ok(date) = NaiveDate::parse_from_str(part, "%F") {
-                todo.creation =
-                    Some(date.and_hms_opt(0, 0, 0).ok_or(TodoParseError::BadDate)?);
+                todo.creation = Some(date.and_hms_opt(0, 0, 0).ok_or(TodoParseError::BadDate)?);
                 parts.next();
             }
         }
@@ -455,7 +461,7 @@ impl FromStr for Todo {
 
         if let Some(date) = todo.metadata.get(&"due".to_string()) {
             if date == "today" {
-                if let Some(created) = todo.creation.clone() {
+                if let Some(created) = todo.creation {
                     todo.deadline = TodoDate::Day(created);
                 } else {
                     todo.deadline = TodoDate::Day(Local::now().naive_local());
@@ -463,7 +469,7 @@ impl FromStr for Todo {
 
                 todo.metadata.remove(&"due".to_string());
             } else if let Some(offset) = date.strip_suffix('d') {
-                let today = if let Some(created) = todo.creation.clone() {
+                let today = if let Some(created) = todo.creation {
                     created
                 } else {
                     Local::now().naive_local()

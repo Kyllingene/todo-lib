@@ -1,17 +1,11 @@
 pub use std::str::FromStr;
 
 pub use crate::{
-    Todo,
-    TodoTag,
-
     due::TodoDate,
+    helper::IsDue,
     priority::TodoPriority,
     table::{TodoColumn, TodoTable},
-    helper::IsDue,
+    Todo, TodoTag,
 };
 
-pub use chrono::{
-    self,
-    Local,
-    NaiveDateTime
-};
+pub use chrono::{self, Local, NaiveDateTime};

@@ -1,6 +1,6 @@
 use std::fmt::Display;
 
-use crate::{helper::IsDue, Todo, colors::StyleScheme};
+use crate::{colors::StyleScheme, helper::IsDue, Todo};
 
 /// A list of todos, under a title.
 ///
@@ -48,9 +48,9 @@ impl TodoColumn {
 
     /// Searches for the todo by title. If found, returns a mutable reference to it.
     pub fn get<S: ToString>(&mut self, title: S) -> Option<&mut Todo> {
-        self.todos
-            .iter_mut()
-            .find(|todo| todo.description.to_string(StyleScheme::default(), "") == title.to_string())
+        self.todos.iter_mut().find(|todo| {
+            todo.description.to_string(StyleScheme::default(), "") == title.to_string()
+        })
     }
 
     /// Returns the first todo found with a given metadata key.

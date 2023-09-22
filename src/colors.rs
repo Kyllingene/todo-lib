@@ -103,20 +103,11 @@ impl<'a> StyleScheme<'a> {
         self
     }
 
-    pub fn get_colors(
-        &self,
-        fade: bool,
-    ) -> (&'static str, Self) {
+    pub fn get_colors(&self, fade: bool) -> (&'static str, Self) {
         if fade {
-            (
-                "",
-                Self::new().faded(Some(self.faded)),
-            )
+            ("", Self::new().faded(Some(self.faded)))
         } else {
-            (
-                RESET,
-                self.faded(None),
-            )
+            (RESET, self.faded(None))
         }
     }
 }
