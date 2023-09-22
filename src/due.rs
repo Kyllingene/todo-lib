@@ -16,7 +16,7 @@ use crate::helper::IsDue;
 /// let indefinite_deadline = TodoDate::Never;
 /// assert!(!indefinite_deadline.due());
 /// ```
-#[derive(Debug, Clone, Default)]
+#[derive(Debug, Clone, Default, PartialEq, Eq)]
 pub enum TodoDate {
     /// Never due.
     #[default]
