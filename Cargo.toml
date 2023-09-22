@@ -1,6 +1,6 @@
 [package]
 name = "todo-lib"
-version = "1.2.0"
+version = "2.0.0"
 edition = "2021"
 
 description = "A todo management library for Rust"
@@ -11,4 +11,8 @@ repository = "https://github.com/Kyllingene/todo-lib"
 homepage = "https://github.com/Kyllingene/todo-lib"
 
 [dependencies]
-datetime = "0.5.2"
+chrono = "0.4.31"
+const_format = "0.2.31"
+
+# [path.crates-io]
+# iso = { version = "" }
