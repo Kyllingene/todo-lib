@@ -25,7 +25,10 @@ pub enum TodoParseError {
 
 impl Display for TodoParseError {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "{self:?}")
+        match self {
+            Self::BadDate => write!(f, "Invalid date"),
+            Self::BadPriority => write!(f, "Invalid priority"),
+        }
     }
 }
 
