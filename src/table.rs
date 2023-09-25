@@ -71,6 +71,25 @@ impl TodoColumn {
                 .map_or(false, |v| v == &val.to_string())
         })
     }
+
+    /// Returns an iterator over the todos.
+    pub fn iter(&self) -> impl Iterator<Item = &Todo> {
+        self.todos.iter()
+    }
+
+    /// Returns a mutable iterator over the todos.
+    pub fn iter_mut(&mut self) -> impl Iterator<Item = &mut Todo> {
+        self.todos.iter_mut()
+    }
+}
+
+impl IntoIterator for TodoColumn {
+    type Item = Todo;
+    type IntoIter = <Vec<Todo> as IntoIterator>::IntoIter;
+
+    fn into_iter(self) -> Self::IntoIter {
+        self.todos.into_iter()
+    }
 }
 
 impl IsDue for TodoColumn {
@@ -224,4 +243,3 @@ impl TodoTable {
             .get_meta(key.to_string(), val.to_string())
     }
 }
-
