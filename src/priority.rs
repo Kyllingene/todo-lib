@@ -38,7 +38,7 @@ impl TodoPriority {
     /// Increment the priority by one.
     pub fn inc(&mut self) -> &mut Self {
         match self {
-            Self::None => *self = Self::Z,
+            Self::None => {},
             Self::Z => *self = Self::Y,
             Self::Y => *self = Self::X,
             Self::X => *self = Self::W,
