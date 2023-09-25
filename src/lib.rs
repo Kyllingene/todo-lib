@@ -217,10 +217,15 @@ impl Todo {
 
     /// Marks the todo as complete.
     ///
-    /// Sets completion date to current day.
+    /// Sets completion date to current day. Also moves
+    /// priority into metadata `pri`.
     pub fn complete(&mut self) {
         self.completed = true;
         self.completion_date = Some(Local::now().naive_local());
+
+        if self.priority.is_some() {
+            self.metadata.insert("pri".to_string(), (self.priority as u8 as char).to_string());
+        }
     }
 
     /// Checks if the todo has a certain project tag.
