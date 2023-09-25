@@ -225,6 +225,7 @@ impl Todo {
 
         if self.priority.is_some() {
             self.metadata.insert("pri".to_string(), (self.priority as u8 as char).to_string());
+            self.priority = TodoPriority::None;
         }
     }
 
